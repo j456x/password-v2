@@ -74,7 +74,7 @@ def password_scanner():
     print("To access the backlog, type 'admin' and follow the prompt.")
     
     passwords = load_backlog()  # Load existing backlog from file
-    admin_password = "X!mm)23e@jW?C"  # Hardcoded admin password
+    admin_password = "*************"  # Hardcoded admin password
     
     while True:
         pwd = input("Enter a password: ")
